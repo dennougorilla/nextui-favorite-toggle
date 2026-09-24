@@ -28,9 +28,10 @@ message() { # text, image
 	fi
 }
 
+# Reads the setting file directly: nextval.elf rewrites minuisettings.txt while loading it, and running it
+# while NextUI starts back up can leave NextUI reading a half written file (losing e.g. button assignments)
 haptics_enabled() {
-	command -v nextval.elf > /dev/null 2>&1 || return 0
-	[ "$(nextval.elf haptics | sed -n 's/.*"haptics": \([0-9]*\).*/\1/p')" != "0" ]
+	[ "$(sed -n 's/^haptics=//p' "$SHARED_USERDATA_PATH/minuisettings.txt" 2> /dev/null | tr -d '\r')" != "0" ]
 }
 
 rumble() { # pulses
