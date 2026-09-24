@@ -33,7 +33,8 @@ fixes that. With the fix, removing a game while browsing Favorites keeps you in 
 that took its place, so you can keep pruning the list.
 
 Multi-disc games (a folder with a matching `.m3u` or `.cue`) are stored as their `.m3u` / `.cue`.
-Recently Played, folders, and paks are skipped.
+Recently Played, folders, and paks are skipped with a broken heart: NextUI does not tell the pak
+which game is highlighted in Recently Played.
 
 ## Works with Favorites.pak
 
