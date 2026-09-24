@@ -59,6 +59,8 @@ before starting it (with NextUI#845, inside a collection it is `<collection>.txt
 path, toggles it in the collection file (written atomically with a temp file and `mv`), shows the
 heart, and exits back to NextUI.
 
+The last toggle is logged to `.userdata/<platform>/logs/Favorite Toggle.txt`.
+
 The hearts are drawn by `scripts/make_hearts.py`.
 
 ## Development

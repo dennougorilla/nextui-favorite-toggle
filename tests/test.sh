@@ -111,5 +111,12 @@ check_last "removing outside Favorites leaves the position alone" "$OTHER/Kirby'
 select_path "$OTHER/Missing.gba"
 [ "$(toggle)" = "Select a game to favorite" ] && echo "ok: rejects a name not in the collection" || { echo "FAIL: collection miss"; FAILED=1; }
 
+export LOGS_PATH="$WORK/logs"; mkdir -p "$LOGS_PATH"
+select_path "$GBA/Kirby's Dream Land.gba"; toggle > /dev/null
+[ "$(cat "$LOGS_PATH/Favorite Toggle.txt")" = "Added: /Roms/Game Boy Advance (GBA)/Kirby's Dream Land.gba" ] && echo "ok: logs the change" || { echo "FAIL: log"; FAILED=1; }
+select_path "$GBA"; toggle > /dev/null
+[ "$(cat "$LOGS_PATH/Favorite Toggle.txt")" = "Not a game: $GBA" ] && echo "ok: logs a rejected selection" || { echo "FAIL: rejected log"; FAILED=1; }
+unset LOGS_PATH
+
 [ $FAILED -eq 0 ] && echo "all tests passed"
 exit $FAILED

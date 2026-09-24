@@ -16,6 +16,11 @@ FAVORITES="$COLLECTIONS_DIR/1) Favorites.txt"
 RUMBLE="/sys/class/gpio/gpio227/value"
 RUMBLE_VOLTAGE="/sys/class/motor/voltage"
 
+# What the last press did, in .userdata/<platform>/logs/Favorite Toggle.txt
+log() {
+	[ -n "$LOGS_PATH" ] && echo "$1" > "$LOGS_PATH/Favorite Toggle.txt"
+}
+
 # Shows the message only briefly, NextUI relaunching afterwards already takes a moment
 message() { # text, image
 	if command -v show2.elf > /dev/null 2>&1; then
@@ -84,6 +89,7 @@ SELECTED=""
 [ -f "$LAST_FILE" ] && SELECTED="$(head -n 1 "$LAST_FILE" | tr -d '\r')"
 
 if [ -z "$SELECTED" ] || ! ROM="$(resolve_rom "$SELECTED")"; then
+	log "Not a game: $SELECTED"
 	message "Select a game to favorite" "$SDCARD_PATH/.system/res/logo.png"
 	exit 0
 fi
@@ -110,6 +116,7 @@ STATUS=$?
 
 if [ $STATUS -ne 0 ] && [ $STATUS -ne 10 ]; then
 	rm -f "$TMP"
+	log "Could not update $FAVORITES"
 	message "Could not update Favorites" "$SDCARD_PATH/.system/res/logo.png"
 	exit 1
 fi
@@ -139,8 +146,10 @@ sync
 
 if [ $STATUS -eq 10 ]; then
 	rumble 2 &
+	log "Removed: $ENTRY"
 	message "Removed from Favorites" "$PAK_DIR/res/heart_empty.png"
 else
 	rumble 1 &
+	log "Added: $ENTRY"
 	message "Added to Favorites" "$PAK_DIR/res/heart_full.png"
 fi
