@@ -1,0 +1,15 @@
+{
+  "name": "Favorite Toggle",
+  "version": "v0.1.0",
+  "type": "TOOL",
+  "description": "Add or remove the selected game from Favorites with one button press.",
+  "author": "dennougorilla",
+  "repo_url": "https://github.com/dennougorilla/nextui-favorite-toggle",
+  "release_filename": "Favorite.Toggle.pak.zip",
+  "changelog": {
+    "v0.1.0": "Initial release."
+  },
+  "platforms": [
+    "tg5040"
+  ]
+}
