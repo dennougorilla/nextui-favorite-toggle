@@ -19,20 +19,41 @@ SPRITE = [
     ".....KDK.....",
     "......K......",
 ]
-# Split down the middle, shown when the selection isn't a game
-BROKEN_SPRITE = [
-    "..KKK...KKK..",
-    ".KGGGK.KGGGK.",
-    "KGLLGGKGGGGDK",
-    "KGLGGG.GGGGDK",
-    "KGGGG.GGGGGDK",
-    ".KGGGG.GGGDK.",
-    "..KGG.GGGDK..",
-    "...KGG.GDK...",
-    "....KG.DK....",
-    ".....KDK.....",
-    "......K......",
-]
+
+
+def broken_sprite() -> list:
+    """The heart split along a zigzag, the right half moved two pixels over so the crack shows as a gap."""
+    crack = [6, 6, 7, 7, 6, 5, 5, 6, 7, 7, 7]  # first column of the right half, per row
+    cells = {}
+    for y, line in enumerate(SPRITE):
+        for x, c in enumerate(line):
+            if c != ".":
+                right = x >= crack[y]
+                cells[(x + 2, y) if right else (x, y)] = right
+    w, h = len(SPRITE[0]) + 2, len(SPRITE)
+    rows = []
+    for y in range(h):
+        row = ""
+        for x in range(w):
+            if (x, y) not in cells:
+                row += "."
+                continue
+            half = cells[(x, y)]
+            edge = any(cells.get((x + dx, y + dy)) != half for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+            if edge:
+                row += "K"
+            elif not half and 1 <= x <= 2 and 1 <= y <= 3 and (x, y) != (2, 3):
+                row += "L"
+            elif half and cells.get((x + 2, y)) is not True:
+                row += "D"
+            else:
+                row += "G"
+        rows.append(row)
+    return rows
+
+
+BROKEN_SPRITE = broken_sprite()
+
 FULL = {"K": (40, 8, 16, 255), "R": (232, 48, 64, 255), "D": (168, 24, 48, 255), "W": (255, 240, 240, 255)}
 EMPTY = {"K": (200, 200, 200, 255), "R": (56, 56, 56, 255), "D": (40, 40, 40, 255), "W": (72, 72, 72, 255)}
 BROKEN = {"K": (200, 200, 200, 255), "G": (120, 120, 120, 255), "D": (84, 84, 84, 255), "L": (170, 170, 170, 255)}
