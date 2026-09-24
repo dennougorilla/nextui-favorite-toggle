@@ -9,21 +9,48 @@
 # one SD-root-relative path per line with a leading slash, LF line endings, sorted by file name.
 # The "1) " prefix sorts it first and is hidden by NextUI.
 
+PAK_DIR="$(cd "$(dirname "$0")" && pwd)"
 LAST_FILE="${LAST_FILE:-/tmp/last.txt}"
 COLLECTIONS_DIR="$SDCARD_PATH/Collections"
 FAVORITES="$COLLECTIONS_DIR/1) Favorites.txt"
+RUMBLE="/sys/class/gpio/gpio227/value"
+RUMBLE_VOLTAGE="/sys/class/motor/voltage"
 
-message() {
+# Shows the message only briefly, NextUI relaunching afterwards already takes a moment
+message() { # text, image
 	if command -v show2.elf > /dev/null 2>&1; then
-		show2.elf --mode=simple --image="$SDCARD_PATH/.system/res/logo.png" --text="$1" --timeout=1
+		show2.elf --mode=simple --image="$2" --text="$1" --timeout=1 &
+		sleep 0.35
+		kill $! 2> /dev/null
 	else
 		echo "$1"
 	fi
 }
 
+haptics_enabled() {
+	command -v nextval.elf > /dev/null 2>&1 || return 0
+	[ "$(nextval.elf haptics | sed -n 's/.*"haptics": \([0-9]*\).*/\1/p')" != "0" ]
+}
+
+rumble() { # pulses
+	[ -w "$RUMBLE" ] && haptics_enabled || return 0
+	# Same full strength NextUI uses, the Brick Pro motor is limited to 2.5V
+	[ -w "$RUMBLE_VOLTAGE" ] && { [ "$DEVICE" = "brickpro" ] && echo 2500000 || echo 3300000; } > "$RUMBLE_VOLTAGE"
+	for _ in $(seq "$1"); do
+		echo 1 > "$RUMBLE"; sleep 0.06
+		echo 0 > "$RUMBLE"; sleep 0.08
+	done
+}
+
 # Resolves the selection to the path a collection should store, or fails if it isn't a game
 resolve_rom() {
 	case "$1" in
+		"$COLLECTIONS_DIR/"*.txt/*)
+			# Selected inside a collection: <collection>.txt/<file name>, look the game up in that list
+			LINE="$(NAME="${1##*/}" awk -F'/' '{ sub(/[ \t\r]+$/, "") } $NF == ENVIRON["NAME"] { print; exit }' "${1%/*}" 2> /dev/null)"
+			[ -n "$LINE" ] || return 1
+			set -- "$SDCARD_PATH$LINE"
+			;;
 		"$SDCARD_PATH/Roms/"*) ;;
 		*) return 1 ;;
 	esac
@@ -46,11 +73,16 @@ resolve_rom() {
 	return 1
 }
 
+# Same order minui-favorites keeps: by file name, ignoring the system folder
+sort_by_name() {
+	awk -F'/' '{ print $NF "|" $0 }' | sort -t'|' -k1,1 | cut -d'|' -f2-
+}
+
 SELECTED=""
 [ -f "$LAST_FILE" ] && SELECTED="$(head -n 1 "$LAST_FILE" | tr -d '\r')"
 
 if [ -z "$SELECTED" ] || ! ROM="$(resolve_rom "$SELECTED")"; then
-	message "Select a game to favorite"
+	message "Select a game to favorite" "$SDCARD_PATH/.system/res/logo.png"
 	exit 0
 fi
 
@@ -76,13 +108,24 @@ STATUS=$?
 
 if [ $STATUS -ne 0 ] && [ $STATUS -ne 10 ]; then
 	rm -f "$TMP"
-	message "Could not update Favorites"
+	message "Could not update Favorites" "$SDCARD_PATH/.system/res/logo.png"
 	exit 1
 fi
 
-# Same order minui-favorites keeps: by file name, ignoring the system folder
-awk -F'/' '{ print $NF "|" $0 }' "$TMP" | sort -t'|' -k1,1 | cut -d'|' -f2- > "$TMP.sorted" &&
-	mv -f "$TMP.sorted" "$TMP"
+sort_by_name < "$TMP" > "$TMP.sorted" && mv -f "$TMP.sorted" "$TMP"
+
+# Removed while browsing Favorites itself: NextUI would return to a row that no longer exists,
+# so point it at the game that took its place (or the one before, if it was the last)
+if [ $STATUS -eq 10 ] && [ "${SELECTED%/*}" = "$FAVORITES" ]; then
+	if [ -s "$TMP" ]; then
+		ROW="$({ cat "$TMP"; echo "$ENTRY"; } | sort_by_name | grep -nxF -- "$ENTRY" | head -n 1 | cut -d: -f1)"
+		NEXT="$(sed -n "${ROW}p" "$TMP")"
+		[ -n "$NEXT" ] || NEXT="$(tail -n 1 "$TMP")"
+		printf '%s\n' "$FAVORITES/${NEXT##*/}" > "$LAST_FILE"
+	else
+		printf '%s\n' "$COLLECTIONS_DIR" > "$LAST_FILE"
+	fi
+fi
 
 # An empty file would still show up as an empty collection
 if [ -s "$TMP" ]; then
@@ -93,7 +136,10 @@ fi
 sync
 
 if [ $STATUS -eq 10 ]; then
-	message "Removed from Favorites"
+	rumble 2 &
+	message "Removed from Favorites" "$PAK_DIR/res/heart_empty.png"
 else
-	message "Added to Favorites"
+	rumble 1 &
+	message "Added to Favorites" "$PAK_DIR/res/heart_full.png"
 fi
+wait

@@ -78,5 +78,38 @@ done
 rm -f "$LAST_FILE"
 [ "$(toggle)" = "Select a game to favorite" ] && echo "ok: no last.txt" || { echo "FAIL: no last.txt"; FAILED=1; }
 
+check_last() { # description, expected last.txt
+	if [ "$(cat "$LAST_FILE")" = "$2" ]; then echo "ok: $1"; else
+		echo "FAIL: $1"; echo "--- expected"; echo "$2"; echo "--- got"; cat "$LAST_FILE"; FAILED=1
+	fi
+}
+
+# Inside a collection NextUI names the selection <collection>.txt/<file name>
+for GAME in "Kirby's Dream Land.gba" "Mario & Luigi [!] (USA).gba" "Zelda - Minish Cap.gba"; do
+	select_path "$GBA/$GAME"; toggle > /dev/null
+done
+select_path "$FAV/Mario & Luigi [!] (USA).gba"; toggle > /dev/null
+check "remove from inside Favorites" "/Roms/Game Boy Advance (GBA)/Kirby's Dream Land.gba
+/Roms/Game Boy Advance (GBA)/Zelda - Minish Cap.gba"
+check_last "returns to the game that took its place" "$FAV/Zelda - Minish Cap.gba"
+
+select_path "$FAV/Zelda - Minish Cap.gba"; toggle > /dev/null
+check_last "last row removed, returns to the one before" "$FAV/Kirby's Dream Land.gba"
+
+select_path "$FAV/Kirby's Dream Land.gba"; toggle > /dev/null
+check "removing the only entry deletes the file" ""
+check_last "empty Favorites returns to Collections" "$SDCARD_PATH/Collections"
+
+OTHER="$SDCARD_PATH/Collections/Handhelds.txt"
+printf '%s\n' "/Roms/Game Boy Advance (GBA)/Kirby's Dream Land.gba" > "$OTHER"
+select_path "$OTHER/Kirby's Dream Land.gba"
+[ "$(toggle)" = "Added to Favorites" ] && echo "ok: add from another collection" || { echo "FAIL: add from another collection"; FAILED=1; }
+check "another collection resolves to the rom" "/Roms/Game Boy Advance (GBA)/Kirby's Dream Land.gba"
+select_path "$OTHER/Kirby's Dream Land.gba"; toggle > /dev/null
+check_last "removing outside Favorites leaves the position alone" "$OTHER/Kirby's Dream Land.gba"
+
+select_path "$OTHER/Missing.gba"
+[ "$(toggle)" = "Select a game to favorite" ] && echo "ok: rejects a name not in the collection" || { echo "FAIL: collection miss"; FAILED=1; }
+
 [ $FAILED -eq 0 ] && echo "all tests passed"
 exit $FAILED
