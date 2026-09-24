@@ -26,6 +26,7 @@ def main() -> None:
     meta = json.loads((ROOT / "pak.json").read_text())
     files = [(p, p.relative_to(PAK_SRC).as_posix()) for p in sorted(PAK_SRC.rglob("*")) if p.is_file()]
     files.append((ROOT / "pak.json", "pak.json"))
+    files.append((ROOT / "LICENSE", "LICENSE"))
 
     DIST.mkdir(exist_ok=True)
 

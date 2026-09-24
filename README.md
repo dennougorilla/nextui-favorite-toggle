@@ -22,10 +22,15 @@ The Smart Pro has no assignable buttons.
 Highlight a game anywhere in the main menu — a system folder or any collection, including Favorites
 itself — and press the assigned button:
 
-- not a favorite yet → *Added to Favorites*
-- already a favorite → *Removed from Favorites*
+- not a favorite yet → a full heart and one short rumble
+- already a favorite → an empty heart and two short rumbles
 
+The heart shows for about a third of a second. Rumble follows NextUI's haptics setting.
 NextUI comes back to the same spot in the list afterwards. Favorites show up under **Collections**.
+
+When you remove a game while browsing Favorites itself, the pak points NextUI at the game that
+took its place, so you can keep pruning the list. This needs a NextUI build that reports the
+selected row inside collections; older builds return to the game's system folder instead.
 Multi-disc games (a folder with a matching `.m3u` or `.cue`) are stored as their `.m3u` / `.cue`.
 Recently Played, folders, and paks are skipped.
 
@@ -49,8 +54,11 @@ blank lines, and duplicates are cleaned up the next time you toggle a game.
 ## How it works
 
 When a pak is launched from an FN button, NextUI writes the highlighted entry to `/tmp/last.txt`
-before starting it. `launch.sh` reads that path, toggles it in the collection file (written atomically
-with a temp file and `mv`), shows a one-second confirmation, and exits back to NextUI.
+before starting it (inside a collection it is `<collection>.txt/<file name>`). `launch.sh` reads that
+path, toggles it in the collection file (written atomically with a temp file and `mv`), shows the
+heart, and exits back to NextUI.
+
+The hearts are drawn by `scripts/make_hearts.py`.
 
 ## Development
 
@@ -67,3 +75,7 @@ To test with the real device shell: `docker run --rm -v "$PWD:/repo" busybox sh 
 
 Bump `version` and `changelog` in `pak.json`, then push a matching tag (`v0.2.0`).
 CI tests, packages, and publishes the release.
+
+## License
+
+[MIT](LICENSE)

@@ -21,7 +21,8 @@ message() { # text, image
 	if command -v show2.elf > /dev/null 2>&1; then
 		show2.elf --mode=simple --image="$2" --text="$1" --timeout=1 &
 		sleep 0.35
-		kill $! 2> /dev/null
+		# show2.elf ignores SIGTERM and would stay up until its 1s timeout
+		kill -9 $! 2> /dev/null
 	else
 		echo "$1"
 	fi
@@ -142,4 +143,3 @@ else
 	rumble 1 &
 	message "Added to Favorites" "$PAK_DIR/res/heart_full.png"
 fi
-wait
