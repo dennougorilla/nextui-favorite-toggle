@@ -90,7 +90,7 @@ SELECTED=""
 
 if [ -z "$SELECTED" ] || ! ROM="$(resolve_rom "$SELECTED")"; then
 	log "Not a game: $SELECTED"
-	message "Select a game to favorite" "$SDCARD_PATH/.system/res/logo.png"
+	message "Select a game to favorite" "$PAK_DIR/res/heart_broken.png"
 	exit 0
 fi
 
@@ -117,7 +117,7 @@ STATUS=$?
 if [ $STATUS -ne 0 ] && [ $STATUS -ne 10 ]; then
 	rm -f "$TMP"
 	log "Could not update $FAVORITES"
-	message "Could not update Favorites" "$SDCARD_PATH/.system/res/logo.png"
+	message "Could not update Favorites" "$PAK_DIR/res/heart_broken.png"
 	exit 1
 fi
 
